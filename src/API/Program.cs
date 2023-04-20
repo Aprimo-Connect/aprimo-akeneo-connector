@@ -13,6 +13,10 @@ namespace API
 			// Add services to the container.
 			builder.Services.AddDataProtection();
 			builder.Services.AddHttpClient<IAkeneoService, AkeneoService>();
+			builder.Services.AddFileSystemTokenStorage(options =>
+			{
+				options.Path = Path.Combine(AppContext.BaseDirectory, "token");
+			});
 
 			builder.Services.AddControllers();
 			// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

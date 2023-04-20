@@ -15,13 +15,15 @@ namespace API.Akeneo
 		private readonly HttpClient _httpClient;
 		private readonly AkeneoSettings _settings;
 		private readonly RandomNumberGenerator _randomNumberGenerator;
+		private readonly ITokenStorage _tokenStorage;
 
-		public AkeneoService(ILogger<AkeneoService> logger, HttpClient httpClient, AkeneoSettings settings)
+		public AkeneoService(ILogger<AkeneoService> logger, HttpClient httpClient, AkeneoSettings settings, ITokenStorage tokenStorage)
 		{
 			_logger = logger;
 			_httpClient = httpClient;
 			_settings = settings;
 			_randomNumberGenerator = RandomNumberGenerator.Create();
+			_tokenStorage = tokenStorage;
 		}
 
 		public async Task<(bool Success, AkeneoOAuthTokenReponse? TokenResponse)> TryGetGetOAuthToken(Uri baseUri, string code)
@@ -39,7 +41,16 @@ namespace API.Akeneo
 				return (false, null);
 			}
 
-			return (true, JsonSerializer.Deserialize<AkeneoOAuthTokenReponse>(tokenResponse, _jsonSerializerOptions));
+			var token = JsonSerializer.Deserialize<AkeneoOAuthTokenReponse>(tokenResponse, _jsonSerializerOptions);
+			if (token == null)
+			{
+				_logger.LogError("Failed to deserialize response from {url}: {response}", tokenUrlBuilder.Uri, tokenResponse);
+				return (false, null);
+			}
+
+			await _tokenStorage.SetTokenAsync(token.AccessToken!);
+
+			return (true, token);
 		}
 
 		private HttpContent CreateOAuthRequestContent(string code)

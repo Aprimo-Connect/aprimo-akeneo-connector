@@ -16,13 +16,17 @@ namespace API.Controllers
 		private readonly AkeneoSettings _settings;
 		private readonly IDataProtector _dataProtector;
 		private readonly IAkeneoService _akeneoService;
+		private readonly ITokenStorage _tokenStorage;
+		private readonly IWebHostEnvironment _env;
 
-		public AkeneoController(ILogger<AkeneoController> logger, AkeneoSettings settings, IDataProtectionProvider dataProtectionProvider, IAkeneoService akeneoService)
+		public AkeneoController(ILogger<AkeneoController> logger, AkeneoSettings settings, IDataProtectionProvider dataProtectionProvider, IAkeneoService akeneoService, ITokenStorage tokenStorage, IWebHostEnvironment env)
 		{
 			_logger = logger;
 			_settings = settings;
 			_dataProtector = dataProtectionProvider.CreateProtector("AkeneoSettings");
 			_akeneoService = akeneoService;
+			_tokenStorage = tokenStorage;
+			_env = env;
 		}
 
 		/// <summary>
@@ -73,13 +77,26 @@ namespace API.Controllers
 				return BadRequest();
 			}
 
-			var akeneoOAuthResult = await _akeneoService.TryGetGetOAuthToken(pimUrl, code);
-			if (!akeneoOAuthResult.Success)
+			var (success, tokenResponse) = await _akeneoService.TryGetGetOAuthToken(pimUrl, code);
+			if (!success)
 			{
 				return Problem();
 			}
 
-			return Ok(akeneoOAuthResult.TokenResponse);
+			return Ok(tokenResponse);
+		}
+
+		[HttpGet("token")]
+		[ApiExplorerSettings(IgnoreApi = true)]
+		public async Task<IActionResult> Token()
+		{
+			if (!_env.IsDevelopment())
+			{
+				return NotFound();
+			}
+
+			var token = await _tokenStorage.GetTokenAsync();
+			return Ok(token);
 		}
 	}
 }
