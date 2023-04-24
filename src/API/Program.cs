@@ -1,4 +1,5 @@
 using API.Akeneo;
+using API.Aprimo;
 using API.Configuration;
 using System.Reflection;
 
@@ -13,12 +14,18 @@ namespace API
 			// Add services to the container.
 			builder.Services.AddDataProtection();
 			builder.Services.AddHttpClient<IAkeneoService, AkeneoService>();
+			builder.Services.AddHttpClient<IAprimoTokenService, AprimoTokenService>();
+
+			builder.Services.AddScoped<IAprimoUserRepository, AprimoUserRepository>();
+
 			builder.Services.AddFileSystemTokenStorage(options =>
 			{
 				options.Path = Path.Combine(AppContext.BaseDirectory, "token");
 			});
 
 			builder.Services.AddControllers();
+
+			builder.Services.AddAuthentication().AddScheme<AprimoRuleAuthenticationHandlerOptions, AprimoRuleAuthenticationHandler>("AprimoRuleAuth", null);
 			// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 			builder.Services.AddEndpointsApiExplorer();
 			builder.Services.AddSwaggerGen(options =>

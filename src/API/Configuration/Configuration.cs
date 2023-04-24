@@ -43,6 +43,33 @@ namespace API.Configuration
 		}
 	}
 
+	public class AprimoSettings : IValidatable
+	{
+		public string? ClientId { get; set; }
+
+		public string? ClientSecret { get; set; }
+
+		public Dictionary<string, string>? Users { get; set; }
+
+		public void Validate()
+		{
+			if (string.IsNullOrEmpty(ClientId))
+			{
+				throw new InvalidProgramException($"Missing required configuration value: {nameof(AprimoSettings)}:{nameof(ClientId)}");
+			}
+
+			if (string.IsNullOrEmpty(ClientSecret))
+			{
+				throw new InvalidProgramException($"Missing required configuration value: {nameof(AprimoSettings)}:{nameof(ClientSecret)}");
+			}
+
+			if (Users == null || Users.Count <= 0)
+			{
+				throw new InvalidProgramException($"Missing required configuration value: {nameof(AprimoSettings)}:{nameof(Users)}");
+			}
+		}
+	}
+
 	public static class IServiceCollection_Extensions
 	{
 		public static IServiceCollection AddSettings(this IServiceCollection services, IConfiguration configuration)
@@ -50,6 +77,8 @@ namespace API.Configuration
 			services.AddTransient<IStartupFilter, SettingValidationStartupFilter>();
 
 			services.AddValidatingSettings<AkeneoSettings>(configuration, nameof(AkeneoSettings));
+			services.AddValidatingSettings<AprimoSettings>(configuration, nameof(AprimoSettings));
+
 			return services;
 		}
 
@@ -62,7 +91,13 @@ namespace API.Configuration
 
 		public static IServiceCollection ConfigureExplicitly<T>(this IServiceCollection services, IConfiguration configuration, string sectionName) where T : class
 		{
-			services.Configure<T>(GetConfigurationSectionWithNamingFallback(configuration, sectionName));
+			var configSection = GetConfigurationSectionWithNamingFallback(configuration, sectionName);
+			if (configSection == null)
+			{
+				throw new InvalidProgramException($"Missing configuration section: {sectionName}");
+			}
+
+			services.Configure<T>(configSection);
 			services.AddSingleton(resolver => resolver.GetRequiredService<IOptions<T>>().Value);
 			return services;
 		}

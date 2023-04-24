@@ -59,12 +59,12 @@ namespace API.Akeneo
 
 			var postData = new[]
 			{
-				new KeyValuePair<string, string?>("grant_type", "authorization_code"),
-				new KeyValuePair<string, string?>("code", code),
-				new KeyValuePair<string, string?>("client_id", _settings.ClientId),
-				new KeyValuePair<string, string?>("code_identifier", codeIdentifier),
-				new KeyValuePair<string, string?>("code_challenge", codeChallenge),
-			};
+					new KeyValuePair<string, string?>("grant_type", "authorization_code"),
+					new KeyValuePair<string, string?>("code", code),
+					new KeyValuePair<string, string?>("client_id", _settings.ClientId),
+					new KeyValuePair<string, string?>("code_identifier", codeIdentifier),
+					new KeyValuePair<string, string?>("code_challenge", codeChallenge),
+				};
 
 			var content = new FormUrlEncodedContent(postData);
 

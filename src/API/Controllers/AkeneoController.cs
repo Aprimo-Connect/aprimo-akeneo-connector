@@ -30,9 +30,9 @@ namespace API.Controllers
 		}
 
 		/// <summary>
-		/// Activation endpoint for AkeneoSettings PIM (<a href="https://api.akeneo.com/apps/authentication-and-authorization.html">AkeneoSettings OAuth documentation</a>).
+		/// Activation endpoint for Akeneo PIM (<a href="https://api.akeneo.com/apps/authentication-and-authorization.html">Akeneo OAuth documentation</a>).
 		/// </summary>
-		/// <param name="pim_url">The URL to AkeneoSettings (e.g. https://xxx.cloud.akeneo.com/)</param>
+		/// <param name="pim_url">The URL to Akeneo (e.g. https://xxx.cloud.akeneo.com/)</param>
 		/// <returns></returns>
 		[HttpGet("activate", Name = "Activate")]
 		public IActionResult Activate([Required] Uri pim_url)
@@ -60,7 +60,7 @@ namespace API.Controllers
 		}
 
 		/// <summary>
-		/// Callback endpoint for AkeneoSettings PIM (<a href="https://api.akeneo.com/apps/authentication-and-authorization.html">AkeneoSettings OAuth documentation</a>).
+		/// Callback endpoint for Akeneo PIM (<a href="https://api.akeneo.com/apps/authentication-and-authorization.html">Akeneo OAuth documentation</a>).
 		/// </summary>
 		/// <returns></returns>
 		[HttpGet("callback", Name = "Callback")]
