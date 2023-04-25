@@ -1,4 +1,5 @@
-﻿using API.Aprimo;
+﻿using API.Akeneo;
+using API.Aprimo;
 using API.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,14 +16,16 @@ namespace API.Controllers
 		private readonly AprimoSettings _aprimoSettings;
 		private readonly AkeneoSettings _akeneoSettings;
 		private readonly IAprimoTokenService _aprimoTokenService;
+		private readonly IAkeneoService _akeneoService;
 
-		public AprimoController(ILogger<AprimoController> logger, IWebHostEnvironment env, AprimoSettings aprimoSettings, AkeneoSettings akeneoSettings, IAprimoTokenService aprimoTokenService)
+		public AprimoController(ILogger<AprimoController> logger, IWebHostEnvironment env, AprimoSettings aprimoSettings, AkeneoSettings akeneoSettings, IAprimoTokenService aprimoTokenService, IAkeneoService akeneoService)
 		{
 			_logger = logger;
 			_env = env;
 			_aprimoSettings = aprimoSettings;
 			_akeneoSettings = akeneoSettings;
 			_aprimoTokenService = aprimoTokenService;
+			_akeneoService = akeneoService;
 		}
 
 		/// <summary>
@@ -34,13 +37,19 @@ namespace API.Controllers
 		[HttpPost("execute", Name = "Execute")]
 		[Authorize(AuthenticationSchemes = "AprimoRuleAuth")]
 		[ServiceFilter(typeof(AprimoHMACResourceFilter))]
-		public IActionResult Execute([Required] Uri pim_url, [FromBody] AprimoRuleBody aprimoRuleBody)
+		public async Task<IActionResult> Execute([Required] Uri pim_url, [FromBody] AprimoRuleBody aprimoRuleBody)
 		{
 			if (!_akeneoSettings.IsAllowedHost(pim_url.Host))
 			{
 				_logger.LogWarning("Host {host} is not allowed. Make sure to add the host to the configuration {configuration}.", pim_url.Host, $"{nameof(AkeneoSettings)}.{nameof(AkeneoSettings.AllowedHosts)}");
 
-				return new StatusCodeResult(StatusCodes.Status403Forbidden);
+				return StatusCode(StatusCodes.Status400BadRequest, "Invalid pim_url. Host is not allowed.");
+			}
+
+			var akeneoToken = await _akeneoService.GetCurrentTokenForHost(pim_url.Host);
+			if (string.IsNullOrEmpty(akeneoToken))
+			{
+				return StatusCode(StatusCodes.Status417ExpectationFailed, "No current access token available to Akeneo.");
 			}
 
 			return Ok();

@@ -3,5 +3,7 @@
 	public interface IAkeneoService
 	{
 		Task<(bool Success, AkeneoOAuthTokenReponse? TokenResponse)> TryGetGetOAuthToken(Uri baseUri, string code);
+
+		Task<string?> GetCurrentTokenForHost(string host);
 	}
 }

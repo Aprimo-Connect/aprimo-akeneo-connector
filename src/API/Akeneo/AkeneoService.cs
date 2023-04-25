@@ -26,6 +26,11 @@ namespace API.Akeneo
 			_tokenStorage = tokenStorage;
 		}
 
+		public async Task<string?> GetCurrentTokenForHost(string host)
+		{
+			return await _tokenStorage.GetTokenAsync(host);
+		}
+
 		public async Task<(bool Success, AkeneoOAuthTokenReponse? TokenResponse)> TryGetGetOAuthToken(Uri baseUri, string code)
 		{
 			var tokenUrlBuilder = new UriBuilder(baseUri)

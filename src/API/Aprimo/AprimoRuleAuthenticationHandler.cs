@@ -23,24 +23,56 @@ namespace API.Aprimo
 
 		protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
 		{
-			var authorizationHeader = Request.Headers["Authorization"].ToString();
-			if (authorizationHeader != null && authorizationHeader.StartsWith("basic", StringComparison.OrdinalIgnoreCase))
+			var (success, claims) = await Authenticate();
+			if (!success)
 			{
-				var token = authorizationHeader.Substring("Basic ".Length).Trim();
-				var credentialsAsEncodedString = Encoding.UTF8.GetString(Convert.FromBase64String(token));
-				var credentials = credentialsAsEncodedString.Split(':');
-				var authResult = await _userRepository.Authenticate(credentials[0], credentials[1]);
-				if (authResult.Success)
-				{
-					var identity = new ClaimsIdentity(authResult.Claims, "Basic");
-					var claimsPrincipal = new ClaimsPrincipal(identity);
-					return await Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(claimsPrincipal, Scheme.Name)));
-				}
+				Response.StatusCode = 401;
+				Response.Headers.Add("WWW-Authenticate", "Basic realm=\"AprimoAkeneoConnector\"");
+				return await Task.FromResult(AuthenticateResult.Fail("Invalid Authorization Header"));
 			}
 
-			Response.StatusCode = 401;
-			Response.Headers.Add("WWW-Authenticate", "Basic realm=\"AprimoAkeneoConnector\"");
-			return await Task.FromResult(AuthenticateResult.Fail("Invalid Authorization Header"));
+			var identity = new ClaimsIdentity(claims, "Basic");
+			var claimsPrincipal = new ClaimsPrincipal(identity);
+			return await Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(claimsPrincipal, Scheme.Name)));
+		}
+
+		private async Task<(bool Success, IEnumerable<Claim>? Claims)> Authenticate()
+		{
+			var failCase = (false, (IEnumerable<Claim>?)null);
+			var authorizationHeader = Request.Headers["Authorization"].ToString();
+			if (authorizationHeader == null)
+			{
+				return failCase;
+			}
+
+			if (!authorizationHeader.StartsWith("basic", StringComparison.OrdinalIgnoreCase))
+			{
+				return failCase;
+			}
+
+			var token = authorizationHeader.Substring("Basic ".Length).Trim();
+			if (string.IsNullOrEmpty(token))
+			{
+				return failCase;
+			}
+
+			string credentialsAsEncodedString;
+			try
+			{
+				credentialsAsEncodedString = Encoding.UTF8.GetString(Convert.FromBase64String(token));
+			}
+			catch (FormatException)
+			{
+				return failCase;
+			}
+
+			var credentials = credentialsAsEncodedString.Split(':', 2);
+			if (credentials.Length != 2)
+			{
+				return failCase;
+			}
+
+			return await _userRepository.Authenticate(credentials[0], credentials[1]);
 		}
 	}
 

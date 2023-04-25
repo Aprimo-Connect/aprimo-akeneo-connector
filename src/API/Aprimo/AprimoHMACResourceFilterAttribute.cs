@@ -23,7 +23,7 @@ namespace API.Aprimo
 			if (!success)
 			{
 				_logger.LogError("HMAC validation failed (didValidate? {didValidate}).", didValidate);
-				context.Result = new StatusCodeResult(StatusCodes.Status403Forbidden);
+				context.Result = new ObjectResult("HMAC validation failed.") { StatusCode = StatusCodes.Status403Forbidden };
 				return;
 			}
 
