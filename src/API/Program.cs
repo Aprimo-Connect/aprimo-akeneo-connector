@@ -23,6 +23,8 @@ namespace API
 				options.Path = Path.Combine(AppContext.BaseDirectory, "token");
 			});
 
+			builder.Services.AddScoped<AprimoHMACResourceFilter>();
+
 			builder.Services.AddControllers();
 
 			builder.Services.AddAuthentication().AddScheme<AprimoRuleAuthenticationHandlerOptions, AprimoRuleAuthenticationHandler>("AprimoRuleAuth", null);

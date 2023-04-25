@@ -48,7 +48,7 @@ namespace API.Akeneo
 				return (false, null);
 			}
 
-			await _tokenStorage.SetTokenAsync(token.AccessToken!);
+			await _tokenStorage.SetTokenAsync(baseUri.Host, token.AccessToken!);
 
 			return (true, token);
 		}

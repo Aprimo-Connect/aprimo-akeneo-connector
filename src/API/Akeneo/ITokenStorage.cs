@@ -2,8 +2,8 @@
 {
 	public interface ITokenStorage
 	{
-		Task<string?> GetTokenAsync();
+		Task<string?> GetTokenAsync(string id);
 
-		Task SetTokenAsync(string token);
+		Task SetTokenAsync(string id, string token);
 	}
 }

@@ -51,6 +51,8 @@ namespace API.Configuration
 
 		public Dictionary<string, string>? Users { get; set; }
 
+		public string HMACSecret { get; set; } = string.Empty;
+
 		public void Validate()
 		{
 			if (string.IsNullOrEmpty(ClientId))

@@ -88,14 +88,26 @@ namespace API.Controllers
 
 		[HttpGet("token")]
 		[ApiExplorerSettings(IgnoreApi = true)]
-		public async Task<IActionResult> Token()
+		public async Task<IActionResult> Token([Required] Uri pim_url)
 		{
 			if (!_env.IsDevelopment())
 			{
 				return NotFound();
 			}
 
-			var token = await _tokenStorage.GetTokenAsync();
+			if (!_settings.IsAllowedHost(pim_url.Host))
+			{
+				_logger.LogWarning("Host {host} is not allowed. Make sure to add the host to the configuration {configuration}.", pim_url.Host, $"{nameof(AkeneoSettings)}.{nameof(AkeneoSettings.AllowedHosts)}");
+
+				return new StatusCodeResult(StatusCodes.Status403Forbidden);
+			}
+
+			var token = await _tokenStorage.GetTokenAsync(pim_url.Host);
+			if (string.IsNullOrEmpty(token))
+			{
+				return NotFound();
+			}
+
 			return Ok(token);
 		}
 	}
