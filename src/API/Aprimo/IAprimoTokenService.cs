@@ -2,6 +2,6 @@
 {
 	public interface IAprimoTokenService
 	{
-		Task<(bool Success, AprimoOAuthTokenResponse? token)> GetTokenAsync(Uri baseAprimoUri, string clientId, string clientSecret);
+		Task<(bool Success, AprimoOAuthTokenResponse? Token)> GetTokenAsync(Uri baseAprimoUri, string clientId, string clientSecret);
 	}
 }

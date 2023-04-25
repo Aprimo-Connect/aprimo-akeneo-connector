@@ -13,7 +13,7 @@ namespace API.Aprimo
 			_httpClient = httpClient;
 		}
 
-		public async Task<(bool Success, AprimoOAuthTokenResponse? token)> GetTokenAsync(Uri baseAprimoUri, string clientId, string clientSecret)
+		public async Task<(bool Success, AprimoOAuthTokenResponse? Token)> GetTokenAsync(Uri baseAprimoUri, string clientId, string clientSecret)
 		{
 			var tokenUriBuilder = new UriBuilder(baseAprimoUri);
 			tokenUriBuilder.Path = "/login/connect/token";

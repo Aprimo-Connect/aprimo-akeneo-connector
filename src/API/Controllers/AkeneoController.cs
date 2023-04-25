@@ -17,7 +17,7 @@ namespace API.Controllers
 		private readonly IDataProtector _dataProtector;
 		private readonly IAkeneoService _akeneoService;
 		private readonly ITokenStorage _tokenStorage;
-		private readonly IWebHostEnvironment _env;
+		private readonly IHostEnvironment _env;
 
 		public AkeneoController(ILogger<AkeneoController> logger, AkeneoSettings settings, IDataProtectionProvider dataProtectionProvider, IAkeneoService akeneoService, ITokenStorage tokenStorage, IWebHostEnvironment env)
 		{
