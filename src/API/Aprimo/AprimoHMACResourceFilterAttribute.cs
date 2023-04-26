@@ -1,5 +1,4 @@
-﻿using API.Configuration;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System.Security.Cryptography;
 using System.Text;
@@ -9,17 +8,17 @@ namespace API.Aprimo
 	public class AprimoHMACResourceFilter : IAsyncResourceFilter
 	{
 		private readonly ILogger _logger;
-		private readonly AprimoSettings _settings;
+		private readonly AprimoTenant _tenant;
 
-		public AprimoHMACResourceFilter(ILogger<AprimoHMACResourceFilter> logger, AprimoSettings settings)
+		public AprimoHMACResourceFilter(ILogger<AprimoHMACResourceFilter> logger, AprimoTenant tenant)
 		{
 			_logger = logger;
-			_settings = settings;
+			_tenant = tenant;
 		}
 
 		public async Task OnResourceExecutionAsync(ResourceExecutingContext context, ResourceExecutionDelegate next)
 		{
-			var (success, didValidate) = await MaybeValidateHMACHeader(context.HttpContext.Request, _settings.HMACSecret);
+			var (success, didValidate) = await MaybeValidateHMACHeader(context.HttpContext.Request, _tenant.Settings.HMACSecret);
 			if (!success)
 			{
 				_logger.LogError("HMAC validation failed (didValidate? {didValidate}).", didValidate);

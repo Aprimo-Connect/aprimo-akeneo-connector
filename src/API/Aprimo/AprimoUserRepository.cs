@@ -1,4 +1,4 @@
-﻿using API.Configuration;
+﻿using API.Multitenancy;
 using System.Security.Claims;
 
 namespace API.Aprimo
@@ -7,29 +7,30 @@ namespace API.Aprimo
 	{
 		private readonly IConfiguration _config;
 		private readonly ILogger _logger;
-		private readonly AprimoSettings _settings;
+		private readonly ITenantStore<AprimoTenant> _tenantStore;
 
-		public AprimoUserRepository(ILogger<AprimoUserRepository> logger, IConfiguration config, AprimoSettings aprimoSettings)
+		public AprimoUserRepository(ILogger<AprimoUserRepository> logger, IConfiguration config, ITenantStore<AprimoTenant> tenantStore)
 		{
 			_logger = logger;
 			_config = config;
-			_settings = aprimoSettings;
+			_tenantStore = tenantStore;
 		}
 
-		public Task<(bool Success, IEnumerable<Claim> Claims)> Authenticate(string username, string password)
+		public async Task<(bool Success, IEnumerable<Claim> Claims)> Authenticate(string username, string password)
 		{
-			if (_settings.Users == null || !_settings.Users.TryGetValue(username, out string? expectedPassword))
+			var tenant = await _tenantStore.GetTenantAsync(username);
+			if (tenant == null || string.IsNullOrEmpty(tenant.Settings.BasicAuthPassword))
 			{
 				(bool, IEnumerable<Claim>) failedResult = (false, new List<Claim>());
-				return Task.FromResult(failedResult);
+				return failedResult;
 			}
 
-			(bool, IEnumerable<Claim>) successResult = (expectedPassword.Equals(password), new List<Claim>
+			(bool, IEnumerable<Claim>) successResult = (tenant.Settings.BasicAuthPassword.Equals(password), new List<Claim>
 			{
 				new Claim(ClaimTypes.Name, username),
 			});
 
-			return Task.FromResult(successResult);
+			return successResult;
 		}
 	}
 }

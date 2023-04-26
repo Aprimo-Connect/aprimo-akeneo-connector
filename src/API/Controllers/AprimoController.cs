@@ -1,6 +1,5 @@
 ﻿using API.Akeneo;
 using API.Aprimo;
-using API.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
@@ -13,17 +12,17 @@ namespace API.Controllers
 	{
 		private readonly ILogger _logger;
 		private readonly IHostEnvironment _env;
-		private readonly AprimoSettings _aprimoSettings;
-		private readonly AkeneoSettings _akeneoSettings;
+		private readonly AprimoTenant _aprimoTenant;
+		private readonly AkeneoTenant _akeneoTenant;
 		private readonly IAprimoTokenService _aprimoTokenService;
 		private readonly IAkeneoService _akeneoService;
 
-		public AprimoController(ILogger<AprimoController> logger, IWebHostEnvironment env, AprimoSettings aprimoSettings, AkeneoSettings akeneoSettings, IAprimoTokenService aprimoTokenService, IAkeneoService akeneoService)
+		public AprimoController(ILogger<AprimoController> logger, IWebHostEnvironment env, AprimoTenant aprimoTenant, AkeneoTenant akeneoTenant, IAprimoTokenService aprimoTokenService, IAkeneoService akeneoService)
 		{
 			_logger = logger;
 			_env = env;
-			_aprimoSettings = aprimoSettings;
-			_akeneoSettings = akeneoSettings;
+			_aprimoTenant = aprimoTenant;
+			_akeneoTenant = akeneoTenant;
 			_aprimoTokenService = aprimoTokenService;
 			_akeneoService = akeneoService;
 		}
@@ -39,14 +38,7 @@ namespace API.Controllers
 		[ServiceFilter(typeof(AprimoHMACResourceFilter))]
 		public async Task<IActionResult> Execute([Required] Uri pim_url, [FromBody] AprimoRuleBody aprimoRuleBody)
 		{
-			if (!_akeneoSettings.IsAllowedHost(pim_url.Host))
-			{
-				_logger.LogWarning("Host {host} is not allowed. Make sure to add the host to the configuration {configuration}.", pim_url.Host, $"{nameof(AkeneoSettings)}.{nameof(AkeneoSettings.AllowedHosts)}");
-
-				return StatusCode(StatusCodes.Status400BadRequest, "Invalid pim_url. Host is not allowed.");
-			}
-
-			var akeneoToken = await _akeneoService.GetCurrentTokenForHost(pim_url.Host);
+			var akeneoToken = await _akeneoService.GetCurrentTokenForHost(_akeneoTenant.Id);
 			if (string.IsNullOrEmpty(akeneoToken))
 			{
 				return StatusCode(StatusCodes.Status417ExpectationFailed, "No current access token available to Akeneo.");
@@ -76,7 +68,7 @@ namespace API.Controllers
 				return BadRequest();
 			}
 
-			var tokenResult = await _aprimoTokenService.GetTokenAsync(new Uri($"https://{userName}"), _aprimoSettings.ClientId!, _aprimoSettings.ClientSecret!);
+			var tokenResult = await _aprimoTokenService.GetTokenAsync(_aprimoTenant.GetOAuthBaseUri(), _aprimoTenant.Settings.ClientId!, _aprimoTenant.Settings.ClientSecret!);
 			if (!tokenResult.Success)
 			{
 				return BadRequest();

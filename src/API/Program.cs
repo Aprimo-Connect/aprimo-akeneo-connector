@@ -13,21 +13,12 @@ namespace API
 
 			// Add services to the container.
 			builder.Services.AddDataProtection();
-			builder.Services.AddHttpClient<IAkeneoService, AkeneoService>();
-			builder.Services.AddHttpClient<IAprimoTokenService, AprimoTokenService>();
-
-			builder.Services.AddScoped<IAprimoUserRepository, AprimoUserRepository>();
-
-			builder.Services.AddFileSystemTokenStorage(options =>
-			{
-				options.Path = Path.Combine(AppContext.BaseDirectory, "token");
-			});
-
-			builder.Services.AddScoped<AprimoHMACResourceFilter>();
-
 			builder.Services.AddControllers();
+			builder.Services.AddAkeneo(builder.Configuration);
+			builder.Services.AddAprimo(builder.Configuration);
 
-			builder.Services.AddAuthentication().AddScheme<AprimoRuleAuthenticationHandlerOptions, AprimoRuleAuthenticationHandler>("AprimoRuleAuth", null);
+			builder.Services.AddSettings(builder.Configuration);
+
 			// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 			builder.Services.AddEndpointsApiExplorer();
 			builder.Services.AddSwaggerGen(options =>
@@ -35,8 +26,6 @@ namespace API
 				var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
 				options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
 			});
-
-			builder.Services.AddSettings(builder.Configuration);
 
 			var app = builder.Build();
 
@@ -51,6 +40,8 @@ namespace API
 
 			app.UseAuthorization();
 
+			app.UseAkeneo();
+			app.UseAprimo();
 
 			app.MapControllers();
 

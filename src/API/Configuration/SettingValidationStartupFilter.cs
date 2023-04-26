@@ -1,4 +1,6 @@
-﻿namespace API.Configuration
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace API.Configuration
 {
 	public class SettingValidationStartupFilter : IStartupFilter
 	{
@@ -11,9 +13,15 @@
 
 		public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next)
 		{
+			var validationErrors = new List<ValidationException>();
 			foreach (var validatableObject in _validatableObjects)
 			{
-				validatableObject.Validate();
+				validationErrors.AddRange(validatableObject.Validate());
+			}
+
+			if (validationErrors.Any())
+			{
+				throw new AggregateException(validationErrors);
 			}
 
 			return next;

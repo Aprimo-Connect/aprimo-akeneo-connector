@@ -1,7 +1,9 @@
-﻿namespace API.Configuration
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace API.Configuration
 {
 	public interface IValidatable
 	{
-		void Validate();
+		IEnumerable<ValidationException> Validate();
 	}
 }

@@ -1,5 +1,4 @@
-﻿using API.Configuration;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
@@ -13,15 +12,15 @@ namespace API.Akeneo
 		};
 		private readonly ILogger _logger;
 		private readonly HttpClient _httpClient;
-		private readonly AkeneoSettings _settings;
+		private readonly AkeneoTenant _tenant;
 		private readonly RandomNumberGenerator _randomNumberGenerator;
 		private readonly ITokenStorage _tokenStorage;
 
-		public AkeneoService(ILogger<AkeneoService> logger, HttpClient httpClient, AkeneoSettings settings, ITokenStorage tokenStorage)
+		public AkeneoService(ILogger<AkeneoService> logger, HttpClient httpClient, AkeneoTenant tenant, ITokenStorage tokenStorage)
 		{
 			_logger = logger;
 			_httpClient = httpClient;
-			_settings = settings;
+			_tenant = tenant;
 			_randomNumberGenerator = RandomNumberGenerator.Create();
 			_tokenStorage = tokenStorage;
 		}
@@ -66,7 +65,7 @@ namespace API.Akeneo
 			{
 					new KeyValuePair<string, string?>("grant_type", "authorization_code"),
 					new KeyValuePair<string, string?>("code", code),
-					new KeyValuePair<string, string?>("client_id", _settings.ClientId),
+					new KeyValuePair<string, string?>("client_id", _tenant.Settings.ClientId),
 					new KeyValuePair<string, string?>("code_identifier", codeIdentifier),
 					new KeyValuePair<string, string?>("code_challenge", codeChallenge),
 				};
@@ -84,7 +83,7 @@ namespace API.Akeneo
 
 			using (var sha256 = SHA256.Create())
 			{
-				var challengeBytes = sha256.ComputeHash(Encoding.ASCII.GetBytes($"{code_identifier}{_settings.ClientSecret}"));
+				var challengeBytes = sha256.ComputeHash(Encoding.ASCII.GetBytes($"{code_identifier}{_tenant.Settings.ClientSecret}"));
 				var code_challenge = Convert.ToHexString(challengeBytes).ToLower();
 				return (code_identifier, code_challenge);
 			}
