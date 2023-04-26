@@ -19,6 +19,8 @@ namespace API.Aprimo
 
 			services.AddScoped(sp => sp.GetRequiredService<ITenantAccessor<AprimoTenant>>().Tenant!);
 
+			services.AddScoped<TenantRequiredResourceFilter<AprimoTenant>>();
+
 			services.AddAuthentication().AddScheme<AprimoRuleAuthenticationHandlerOptions, AprimoRuleAuthenticationHandler>("AprimoRuleAuth", null);
 
 			return services;

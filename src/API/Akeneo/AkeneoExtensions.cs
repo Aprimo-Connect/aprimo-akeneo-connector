@@ -22,6 +22,8 @@ namespace API.Akeneo
 
 			services.AddScoped(sp => sp.GetRequiredService<ITenantAccessor<AkeneoTenant>>().Tenant!);
 
+			services.AddScoped<TenantRequiredResourceFilter<AkeneoTenant>>();
+
 			return services;
 		}
 	}

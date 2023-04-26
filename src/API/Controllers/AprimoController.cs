@@ -1,5 +1,6 @@
 ﻿using API.Akeneo;
 using API.Aprimo;
+using API.Multitenancy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
@@ -8,6 +9,8 @@ namespace API.Controllers
 {
 	[ApiController]
 	[Route("[controller]")]
+	[ServiceFilter(typeof(TenantRequiredResourceFilter<AkeneoTenant>))]
+	[ServiceFilter(typeof(TenantRequiredResourceFilter<AprimoTenant>))]
 	public class AprimoController : ControllerBase
 	{
 		private readonly ILogger _logger;

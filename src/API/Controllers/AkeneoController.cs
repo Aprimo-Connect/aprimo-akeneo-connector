@@ -1,4 +1,5 @@
 ﻿using API.Akeneo;
+using API.Multitenancy;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
@@ -9,6 +10,7 @@ namespace API.Controllers
 {
 	[ApiController]
 	[Route("[controller]")]
+	[ServiceFilter(typeof(TenantRequiredResourceFilter<AkeneoTenant>))]
 	public class AkeneoController : ControllerBase
 	{
 		private readonly ILogger _logger;
