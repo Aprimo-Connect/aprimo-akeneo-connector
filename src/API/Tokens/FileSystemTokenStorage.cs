@@ -2,7 +2,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace API.Akeneo
+namespace API.Tokens
 {
 	public class FileSystemTokenStorage : ITokenStorage
 	{
@@ -93,21 +93,6 @@ namespace API.Akeneo
 		public FileSystemTokenStorageOptions(string path)
 		{
 			Path = path;
-		}
-	}
-
-	public static class IServiceCollection_Extensions
-	{
-		public static IServiceCollection AddFileSystemTokenStorage(this IServiceCollection services, Action<FileSystemTokenStorageOptions> optionsBuilder)
-		{
-			services.AddSingleton((_) =>
-			{
-				var options = new FileSystemTokenStorageOptions();
-				optionsBuilder(options);
-				return options;
-			});
-			services.AddSingleton<ITokenStorage, FileSystemTokenStorage>();
-			return services;
 		}
 	}
 }

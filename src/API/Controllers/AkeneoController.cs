@@ -1,5 +1,6 @@
 ﻿using API.Akeneo;
 using API.Multitenancy;
+using API.Tokens;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
@@ -88,7 +89,7 @@ namespace API.Controllers
 				return new ObjectResult($"The host '{pimUrl.Host}' is not allowed for this tenant.") { StatusCode = StatusCodes.Status403Forbidden };
 			}
 
-			var (success, tokenResponse) = await _akeneoService.TryGetGetOAuthToken(pimUrl, code);
+			var (success, tokenResponse) = await _akeneoService.CompleteOAuthFlow(code);
 			if (!success)
 			{
 				return Problem();

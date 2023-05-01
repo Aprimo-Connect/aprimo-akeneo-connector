@@ -2,8 +2,8 @@
 {
 	public interface IAkeneoService
 	{
-		Task<(bool Success, AkeneoOAuthTokenReponse? TokenResponse)> TryGetGetOAuthToken(Uri baseUri, string code);
+		Task<bool> IsConfigured();
 
-		Task<string?> GetCurrentTokenForHost(string host);
+		Task<(bool Success, AkeneoOAuthTokenReponse? TokenResponse)> CompleteOAuthFlow(string code);
 	}
 }

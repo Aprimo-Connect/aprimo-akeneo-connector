@@ -1,6 +1,7 @@
 using API.Akeneo;
 using API.Aprimo;
 using API.Configuration;
+using API.Tokens;
 using System.Reflection;
 
 namespace API
@@ -16,6 +17,10 @@ namespace API
 			builder.Services.AddControllers();
 			builder.Services.AddAkeneo(builder.Configuration);
 			builder.Services.AddAprimo(builder.Configuration);
+			builder.Services.AddFileSystemTokenStorage((storageOptions) =>
+			{
+				storageOptions.Path = Path.Combine(AppContext.BaseDirectory, "tokens");
+			});
 
 			builder.Services.AddSettings(builder.Configuration);
 

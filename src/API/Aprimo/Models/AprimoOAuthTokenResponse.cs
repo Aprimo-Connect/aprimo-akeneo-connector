@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace API.Aprimo
+namespace API.Aprimo.Models
 {
 	public class AprimoOAuthTokenResponse
 	{

@@ -1,39 +1,57 @@
-﻿using System.Text.Json;
+﻿using API.Aprimo.Models;
+using API.Tokens;
 
 namespace API.Aprimo
 {
 	public class AprimoTokenService : IAprimoTokenService
 	{
 		private readonly ILogger _logger;
+		private readonly ITokenStorage _tokenStorage;
 		private readonly HttpClient _httpClient;
+		private readonly AprimoTenant _tenant;
+		private string _tokenStorageKey => $"aprimo_{_tenant.Id}";
 
-		public AprimoTokenService(ILogger<AprimoTokenService> logger, HttpClient httpClient)
+		public AprimoTokenService(ILogger<AprimoTokenService> logger, ITokenStorage tokenStorage, HttpClient httpClient, AprimoTenant tenant)
 		{
 			_logger = logger;
+			_tokenStorage = tokenStorage;
 			_httpClient = httpClient;
+			_tenant = tenant;
 		}
 
-		public async Task<(bool Success, AprimoOAuthTokenResponse? Token)> GetTokenAsync(Uri baseAprimoUri, string clientId, string clientSecret)
+		public async Task<(bool Success, string? Token)> TryGetTokenAsync(bool useCache = true)
 		{
-			var tokenUriBuilder = new UriBuilder(baseAprimoUri);
+			if (useCache)
+			{
+				var token = await _tokenStorage.GetTokenAsync(_tokenStorageKey);
+				if (!string.IsNullOrEmpty(token))
+				{
+					return (true, token);
+				}
+			}
+
+			var tokenUriBuilder = new UriBuilder(_tenant.OAuthBaseUri);
 			tokenUriBuilder.Path = "/login/connect/token";
 
-			var response = await _httpClient.PostAsync(tokenUriBuilder.Uri, GetOAuthTokenRequestBody(clientId, clientSecret));
-			var tokenResponse = await response.Content.ReadAsStringAsync();
-			if (!response.IsSuccessStatusCode)
+			var postRequest = new HttpRequestMessage(HttpMethod.Post, tokenUriBuilder.Uri);
+			postRequest.Content = GetOAuthTokenRequestBody(_tenant.Settings.ClientId!, _tenant.Settings.ClientSecret!);
+
+			var (success, result) = await _httpClient.SendRequestAsyncWithResult<AprimoOAuthTokenResponse>(postRequest);
+			if (!success || result == null || result.Data == null)
 			{
-				_logger.LogError("Failed to get token from {url}: {status}", tokenUriBuilder.Uri, response.StatusCode);
+				_logger.LogError("Failed to get token from {url}", tokenUriBuilder.Uri);
 				return (false, null);
 			}
 
-			var token = JsonSerializer.Deserialize<AprimoOAuthTokenResponse>(tokenResponse);
-			if (token == null)
+			if (string.IsNullOrEmpty(result.Data.AccessToken))
 			{
-				_logger.LogError("Failed to deserialize response from {url}: {response}", tokenUriBuilder.Uri, tokenResponse);
+				_logger.LogError("Failed to deserialize response from {url}", tokenUriBuilder.Uri);
 				return (false, null);
 			}
 
-			return (true, token);
+			await _tokenStorage.SetTokenAsync(_tokenStorageKey, result.Data.AccessToken);
+
+			return (true, result.Data.AccessToken);
 		}
 
 		private HttpContent GetOAuthTokenRequestBody(string clientId, string clientSecret)
@@ -47,6 +65,13 @@ namespace API.Aprimo
 			};
 
 			return new FormUrlEncodedContent(postData);
+		}
+
+		public async Task<bool> ClearTokenAsync()
+		{
+			await _tokenStorage.SetTokenAsync(_tokenStorageKey, "");
+
+			return true;
 		}
 	}
 }

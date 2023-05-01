@@ -1,9 +1,9 @@
 ﻿using API.Akeneo;
 using API.Aprimo;
+using API.Aprimo.Models;
 using API.Multitenancy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel.DataAnnotations;
 
 namespace API.Controllers
 {
@@ -17,37 +17,48 @@ namespace API.Controllers
 		private readonly IHostEnvironment _env;
 		private readonly AprimoTenant _aprimoTenant;
 		private readonly AkeneoTenant _akeneoTenant;
-		private readonly IAprimoTokenService _aprimoTokenService;
+		private readonly IAprimoService _aprimoService;
 		private readonly IAkeneoService _akeneoService;
+		private readonly IAprimoTokenService _aprimoTokenService;
 
-		public AprimoController(ILogger<AprimoController> logger, IWebHostEnvironment env, AprimoTenant aprimoTenant, AkeneoTenant akeneoTenant, IAprimoTokenService aprimoTokenService, IAkeneoService akeneoService)
+		public AprimoController(ILogger<AprimoController> logger, IWebHostEnvironment env, AprimoTenant aprimoTenant, AkeneoTenant akeneoTenant, IAprimoService aprimoService, IAkeneoService akeneoService, IAprimoTokenService aprimoTokenService)
 		{
 			_logger = logger;
 			_env = env;
 			_aprimoTenant = aprimoTenant;
 			_akeneoTenant = akeneoTenant;
-			_aprimoTokenService = aprimoTokenService;
+			_aprimoService = aprimoService;
 			_akeneoService = akeneoService;
+			_aprimoTokenService = aprimoTokenService;
 		}
 
 		/// <summary>
 		/// Endpoint for the Aprimo DAM Rule when an Asset is changed or created.
 		/// </summary>
-		/// <param name="pim_url">The URL to Akeneo (e.g. https://xxx.cloud.akeneo.com/)</param>
 		/// <param name="aprimoRuleBody">The data from the Aprimo rule</param>
 		/// <returns></returns>
 		[HttpPost("execute", Name = "Execute")]
 		[Authorize(AuthenticationSchemes = "AprimoRuleAuth")]
 		[ServiceFilter(typeof(AprimoHMACResourceFilter))]
-		public async Task<IActionResult> Execute([Required] Uri pim_url, [FromBody] AprimoRuleBody aprimoRuleBody)
+		public async Task<IActionResult> Execute([FromBody] AprimoRuleBody aprimoRuleBody)
 		{
-			var akeneoToken = await _akeneoService.GetCurrentTokenForHost(_akeneoTenant.Id);
-			if (string.IsNullOrEmpty(akeneoToken))
+			if (!(await _akeneoService.IsConfigured()))
 			{
-				return StatusCode(StatusCodes.Status417ExpectationFailed, "No current access token available to Akeneo.");
+				return StatusCode(StatusCodes.Status417ExpectationFailed, "Akeneo is not yet connected.");
 			}
 
-			return Ok();
+			if (string.IsNullOrEmpty(aprimoRuleBody?.RecordId))
+			{
+				return BadRequest("recordId is required");
+			}
+
+			var (didLoadRecord, record) = await _aprimoService.GetRecord(aprimoRuleBody.RecordId);
+			if (!didLoadRecord)
+			{
+				return StatusCode(StatusCodes.Status500InternalServerError, "Failed to load Aprimo DAM record.");
+			}
+
+			return Ok(record);
 		}
 
 		[HttpGet("auth")]
@@ -71,7 +82,7 @@ namespace API.Controllers
 				return BadRequest();
 			}
 
-			var tokenResult = await _aprimoTokenService.GetTokenAsync(_aprimoTenant.GetOAuthBaseUri(), _aprimoTenant.Settings.ClientId!, _aprimoTenant.Settings.ClientSecret!);
+			var tokenResult = await _aprimoTokenService.TryGetTokenAsync();
 			if (!tokenResult.Success)
 			{
 				return BadRequest();

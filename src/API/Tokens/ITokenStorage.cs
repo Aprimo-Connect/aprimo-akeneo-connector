@@ -1,4 +1,4 @@
-﻿namespace API.Akeneo
+﻿namespace API.Tokens
 {
 	public interface ITokenStorage
 	{

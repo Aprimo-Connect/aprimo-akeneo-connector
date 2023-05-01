@@ -8,10 +8,6 @@ namespace API.Akeneo
 		public static IServiceCollection AddAkeneo(this IServiceCollection services, IConfiguration configuration)
 		{
 			services.AddHttpClient<IAkeneoService, AkeneoService>();
-			services.AddFileSystemTokenStorage((options) =>
-			{
-				options.Path = Path.Combine(AppContext.BaseDirectory, "tokens");
-			});
 
 			services.AddScopedSetting<AkeneoTenantSettings>(configuration, "Akeneo");
 

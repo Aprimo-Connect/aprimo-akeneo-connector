@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using API.Tokens;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
@@ -15,6 +16,8 @@ namespace API.Akeneo
 		private readonly AkeneoTenant _tenant;
 		private readonly RandomNumberGenerator _randomNumberGenerator;
 		private readonly ITokenStorage _tokenStorage;
+		private readonly Uri _baseUri;
+		private readonly string _tokenStorageKey;
 
 		public AkeneoService(ILogger<AkeneoService> logger, HttpClient httpClient, AkeneoTenant tenant, ITokenStorage tokenStorage)
 		{
@@ -23,38 +26,51 @@ namespace API.Akeneo
 			_tenant = tenant;
 			_randomNumberGenerator = RandomNumberGenerator.Create();
 			_tokenStorage = tokenStorage;
+
+			_baseUri = new Uri($"https://{_tenant.Id}");
+			_tokenStorageKey = $"akeneo_{_tenant.Id}";
 		}
 
-		public async Task<string?> GetCurrentTokenForHost(string host)
+		public async Task<bool> IsConfigured()
 		{
-			return await _tokenStorage.GetTokenAsync(host);
+			var token = await _tokenStorage.GetTokenAsync(_tokenStorageKey);
+
+			return !string.IsNullOrEmpty(token);
 		}
 
-		public async Task<(bool Success, AkeneoOAuthTokenReponse? TokenResponse)> TryGetGetOAuthToken(Uri baseUri, string code)
+		public async Task<(bool Success, AkeneoOAuthTokenReponse? TokenResponse)> CompleteOAuthFlow(string code)
 		{
-			var tokenUrlBuilder = new UriBuilder(baseUri)
+			var tokenUrlBuilder = new UriBuilder(_baseUri)
 			{
 				Path = "/connect/apps/v1/oauth2/token"
 			};
 
-			var response = await _httpClient.PostAsync(tokenUrlBuilder.Uri, CreateOAuthRequestContent(code));
-			var tokenResponse = await response.Content.ReadAsStringAsync();
-			if (!response.IsSuccessStatusCode)
+
+			var postRequest = new HttpRequestMessage(HttpMethod.Post, tokenUrlBuilder.Uri);
+			postRequest.Content = CreateOAuthRequestContent(code);
+
+			var (success, result) = await _httpClient.SendRequestAsyncWithResult<AkeneoOAuthTokenReponse>(postRequest);
+			if (!success || result == null)
 			{
-				_logger.LogError("Failed to make request to {url}: {status}", tokenUrlBuilder.Uri, response.StatusCode);
+				_logger.LogError("Failed to make request to {url}", tokenUrlBuilder.Uri);
 				return (false, null);
 			}
 
-			var token = JsonSerializer.Deserialize<AkeneoOAuthTokenReponse>(tokenResponse, _jsonSerializerOptions);
-			if (token == null)
+			if (!success && result.Response != null)
 			{
-				_logger.LogError("Failed to deserialize response from {url}: {response}", tokenUrlBuilder.Uri, tokenResponse);
+				_logger.LogError("Failed to make request to {url} with status {status}", tokenUrlBuilder.Uri, result.Response.StatusCode);
 				return (false, null);
 			}
 
-			await _tokenStorage.SetTokenAsync(baseUri.Host, token.AccessToken!);
+			if (result.Data == null)
+			{
+				_logger.LogError("Failed to deserialize response from {url}", tokenUrlBuilder.Uri);
+				return (false, null);
+			}
 
-			return (true, token);
+			await _tokenStorage.SetTokenAsync(_tokenStorageKey, result.Data.AccessToken!);
+
+			return (true, result.Data);
 		}
 
 		private HttpContent CreateOAuthRequestContent(string code)

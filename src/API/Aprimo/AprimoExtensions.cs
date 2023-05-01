@@ -1,5 +1,6 @@
 ﻿using API.Configuration;
 using API.Multitenancy;
+using Polly;
 
 namespace API.Aprimo
 {
@@ -7,7 +8,28 @@ namespace API.Aprimo
 	{
 		public static IServiceCollection AddAprimo(this IServiceCollection services, IConfiguration configuration)
 		{
-			services.AddHttpClient<IAprimoTokenService, AprimoTokenService>();
+			services
+				.AddHttpClient<IAprimoTokenService, AprimoTokenService>()
+				.ConfigureHttpClient(client =>
+				{
+					client.Timeout = TimeSpan.FromSeconds(10);
+				});
+
+			var unauthorizedPolicy = Policy.HandleResult<HttpResponseMessage>(message => message.StatusCode == System.Net.HttpStatusCode.Unauthorized).RetryAsync(1);
+			services
+				.AddScoped<AprimoTokenAuthHeaderHandler>()
+				.AddHttpClient<IAprimoService, AprimoService>()
+				.ConfigureHttpClient((client) =>
+				{
+					client.DefaultRequestHeaders.Add("API-VERSION", "1");
+					client.DefaultRequestHeaders.Add("Accept", "application/json");
+					client.DefaultRequestHeaders.Add("User-Agent", $"Aprimo.Akeneo.Connector/{Environment.MachineName}");
+					client.Timeout = TimeSpan.FromMinutes(1);
+				})
+				.AddPolicyHandler(unauthorizedPolicy)
+				.AddHttpMessageHandler<AprimoTokenAuthHeaderHandler>()
+				.AddTransientHttpErrorPolicy(builder => builder.WaitAndRetryAsync(3, (attempt) => TimeSpan.FromSeconds(Math.Pow(2, attempt))));
+
 			services.AddScoped<IAprimoUserRepository, AprimoUserRepository>();
 			services.AddScoped<AprimoHMACResourceFilter>();
 			services.AddScopedSetting<AprimoTenantSettings>(configuration, "Aprimo");

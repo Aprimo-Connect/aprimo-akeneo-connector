@@ -2,6 +2,8 @@
 {
 	public interface IAprimoTokenService
 	{
-		Task<(bool Success, AprimoOAuthTokenResponse? Token)> GetTokenAsync(Uri baseAprimoUri, string clientId, string clientSecret);
+		Task<(bool Success, string? Token)> TryGetTokenAsync(bool useCache = true);
+
+		Task<bool> ClearTokenAsync();
 	}
 }
