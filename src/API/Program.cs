@@ -16,8 +16,8 @@ namespace API
 			// Add services to the container.
 			builder.Services.AddDataProtection();
 			builder.Services.AddControllers();
-			builder.Services.AddAkeneo(builder.Configuration);
-			builder.Services.AddAprimo(builder.Configuration);
+			builder.Services.AddAkeneo(builder.Configuration, builder.Environment);
+			builder.Services.AddAprimo(builder.Configuration, builder.Environment);
 			builder.Services.AddIntegration();
 			builder.Services.AddFileSystemTokenStorage((storageOptions) =>
 			{

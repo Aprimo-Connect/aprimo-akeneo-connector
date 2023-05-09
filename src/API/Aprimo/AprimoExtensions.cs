@@ -1,4 +1,5 @@
-﻿using API.Configuration;
+﻿using API._Common;
+using API.Configuration;
 using API.Multitenancy;
 using Polly;
 
@@ -6,23 +7,16 @@ namespace API.Aprimo
 {
 	public static class IServiceCollectionExtensions
 	{
-		public static IServiceCollection AddAprimo(this IServiceCollection services, IConfiguration configuration)
+		public static IServiceCollection AddAprimo(this IServiceCollection services, IConfiguration configuration, IHostEnvironment env)
 		{
-			services
-				.AddHttpClient<IAprimoTokenService, AprimoTokenService>()
-				.ConfigureHttpClient(client =>
-				{
-					client.AddDefaultUserAgent();
-					client.Timeout = TimeSpan.FromSeconds(10);
-				});
+			services.AddDefaultHttpClient<IAprimoTokenService, AprimoTokenService>(env);
 
 			var unauthorizedPolicy = Policy.HandleResult<HttpResponseMessage>(message => message.StatusCode == System.Net.HttpStatusCode.Unauthorized).RetryAsync(1);
 			services
 				.AddScoped<AprimoTokenAuthHeaderHandler>()
-				.AddHttpClient<IAprimoService, AprimoService>()
+				.AddDefaultHttpClient<IAprimoService, AprimoService>(env)
 				.ConfigureHttpClient((client) =>
 				{
-					client.AddDefaultUserAgent();
 					client.DefaultRequestHeaders.Add("API-VERSION", "1");
 					client.DefaultRequestHeaders.Add("Accept", "application/json");
 					client.Timeout = TimeSpan.FromMinutes(1);

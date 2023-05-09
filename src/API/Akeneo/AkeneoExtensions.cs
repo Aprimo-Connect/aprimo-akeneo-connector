@@ -7,25 +7,12 @@ namespace API.Akeneo
 {
 	public static class IServiceCollectionExtensions
 	{
-		public static IServiceCollection AddAkeneo(this IServiceCollection services, IConfiguration configuration)
+		public static IServiceCollection AddAkeneo(this IServiceCollection services, IConfiguration configuration, IHostEnvironment env)
 		{
-			services
-				.AddHttpClient<IAkeneoTokenService, AkeneoTokenService>()
-				.ConfigureHttpClient(client =>
-				{
-					client.AddDefaultUserAgent();
-					client.Timeout = TimeSpan.FromSeconds(10);
-				});
-
+			services.AddDefaultHttpClient<IAkeneoTokenService, AkeneoTokenService>(env);
 			services
 				.AddScoped<AkeneoTokenAuthHeaderHandler>()
-				.AddScoped<HttpClientLoggingHandler>()
-				.AddHttpClient<IAkeneoService, AkeneoService>()
-				.ConfigureHttpClient(client =>
-				{
-					client.AddDefaultUserAgent();
-				})
-				.AddHttpMessageHandler<HttpClientLoggingHandler>()
+				.AddDefaultHttpClient<IAkeneoService, AkeneoService>(env)
 				.AddHttpMessageHandler<AkeneoTokenAuthHeaderHandler>()
 				.AddTransientHttpErrorPolicy(builder => builder.WaitAndRetryAsync(3, (attempt) => TimeSpan.FromSeconds(Math.Pow(2, attempt))));
 
