@@ -1,5 +1,7 @@
-﻿using API.Configuration;
+﻿using API._Common;
+using API.Configuration;
 using API.Multitenancy;
+using Polly;
 
 namespace API.Akeneo
 {
@@ -7,7 +9,25 @@ namespace API.Akeneo
 	{
 		public static IServiceCollection AddAkeneo(this IServiceCollection services, IConfiguration configuration)
 		{
-			services.AddHttpClient<IAkeneoService, AkeneoService>();
+			services
+				.AddHttpClient<IAkeneoTokenService, AkeneoTokenService>()
+				.ConfigureHttpClient(client =>
+				{
+					client.AddDefaultUserAgent();
+					client.Timeout = TimeSpan.FromSeconds(10);
+				});
+
+			services
+				.AddScoped<AkeneoTokenAuthHeaderHandler>()
+				.AddScoped<HttpClientLoggingHandler>()
+				.AddHttpClient<IAkeneoService, AkeneoService>()
+				.ConfigureHttpClient(client =>
+				{
+					client.AddDefaultUserAgent();
+				})
+				.AddHttpMessageHandler<HttpClientLoggingHandler>()
+				.AddHttpMessageHandler<AkeneoTokenAuthHeaderHandler>()
+				.AddTransientHttpErrorPolicy(builder => builder.WaitAndRetryAsync(3, (attempt) => TimeSpan.FromSeconds(Math.Pow(2, attempt))));
 
 			services.AddScopedSetting<AkeneoTenantSettings>(configuration, "Akeneo");
 

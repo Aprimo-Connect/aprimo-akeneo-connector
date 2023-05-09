@@ -34,6 +34,11 @@ namespace API
 			return (true, wrappedResponse);
 		}
 
+		public static void AddDefaultUserAgent(this HttpClient client)
+		{
+			client.DefaultRequestHeaders.Add("User-Agent", $"Aprimo.Akeneo.Connector/{Environment.MachineName}");
+		}
+
 		public class WrappedResponse<T>
 		{
 			public T? Data { get; set; }

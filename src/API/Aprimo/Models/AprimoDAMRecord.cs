@@ -2,6 +2,6 @@
 {
 	public class AprimoDAMRecord : AprimoDAMIdentifiableObject
 	{
-		public AprimoDAMCollection<AprimoDAMFile>? Files { get; set; }
+		public AprimoDAMCollection<AprimoDAMField>? Fields { get; set; }
 	}
 }

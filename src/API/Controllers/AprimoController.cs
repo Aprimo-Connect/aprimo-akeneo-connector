@@ -1,6 +1,6 @@
 ﻿using API.Akeneo;
 using API.Aprimo;
-using API.Aprimo.Models;
+using API.Integration;
 using API.Multitenancy;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,50 +15,49 @@ namespace API.Controllers
 	{
 		private readonly ILogger _logger;
 		private readonly IHostEnvironment _env;
-		private readonly AprimoTenant _aprimoTenant;
-		private readonly AkeneoTenant _akeneoTenant;
 		private readonly IAprimoService _aprimoService;
-		private readonly IAkeneoService _akeneoService;
+		private readonly IAkeneoTokenService _akeneTokenService;
 		private readonly IAprimoTokenService _aprimoTokenService;
+		private readonly IAprimoToAkeneoIntegrationService _integrationService;
 
-		public AprimoController(ILogger<AprimoController> logger, IWebHostEnvironment env, AprimoTenant aprimoTenant, AkeneoTenant akeneoTenant, IAprimoService aprimoService, IAkeneoService akeneoService, IAprimoTokenService aprimoTokenService)
+		public AprimoController(ILogger<AprimoController> logger, IWebHostEnvironment env, IAprimoService aprimoService, IAkeneoTokenService akeneoService, IAprimoTokenService aprimoTokenService, IAprimoToAkeneoIntegrationService integrationService)
 		{
 			_logger = logger;
 			_env = env;
-			_aprimoTenant = aprimoTenant;
-			_akeneoTenant = akeneoTenant;
 			_aprimoService = aprimoService;
-			_akeneoService = akeneoService;
+			_akeneTokenService = akeneoService;
 			_aprimoTokenService = aprimoTokenService;
+			_integrationService = integrationService;
 		}
 
 		/// <summary>
 		/// Endpoint for the Aprimo DAM Rule when an Asset is changed or created.
 		/// </summary>
-		/// <param name="aprimoRuleBody">The data from the Aprimo rule</param>
+		/// <param name="syncRequest">The data from the Aprimo rule</param>
 		/// <returns></returns>
 		[HttpPost("execute", Name = "Execute")]
 		[Authorize(AuthenticationSchemes = "AprimoRuleAuth")]
 		[ServiceFilter(typeof(AprimoHMACResourceFilter))]
-		public async Task<IActionResult> Execute([FromBody] AprimoRuleBody aprimoRuleBody)
+		public async Task<IActionResult> Execute([FromBody] SyncAprimoToAkeneoRequest syncRequest)
 		{
-			if (!(await _akeneoService.IsConfigured()))
+			if (!(await _akeneTokenService.IsConfigured()))
 			{
 				return StatusCode(StatusCodes.Status417ExpectationFailed, "Akeneo is not yet connected.");
 			}
 
-			if (string.IsNullOrEmpty(aprimoRuleBody?.RecordId))
+			if (string.IsNullOrEmpty(syncRequest?.RecordId))
 			{
 				return BadRequest("recordId is required");
 			}
 
-			var (didLoadRecord, record) = await _aprimoService.GetRecord(aprimoRuleBody.RecordId);
-			if (!didLoadRecord)
+			var (syncSuccess, syncResult) = await _integrationService.SendAprimoDAMRecordToAkeneo(syncRequest);
+
+			if (!syncSuccess || syncResult == null)
 			{
-				return StatusCode(StatusCodes.Status500InternalServerError, "Failed to load Aprimo DAM record.");
+				return StatusCode(StatusCodes.Status500InternalServerError, "Failed to sync record to Akeneo.");
 			}
 
-			return Ok(record);
+			return Ok(syncResult);
 		}
 
 		[HttpGet("auth")]

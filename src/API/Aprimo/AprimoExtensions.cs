@@ -12,6 +12,7 @@ namespace API.Aprimo
 				.AddHttpClient<IAprimoTokenService, AprimoTokenService>()
 				.ConfigureHttpClient(client =>
 				{
+					client.AddDefaultUserAgent();
 					client.Timeout = TimeSpan.FromSeconds(10);
 				});
 
@@ -21,9 +22,9 @@ namespace API.Aprimo
 				.AddHttpClient<IAprimoService, AprimoService>()
 				.ConfigureHttpClient((client) =>
 				{
+					client.AddDefaultUserAgent();
 					client.DefaultRequestHeaders.Add("API-VERSION", "1");
 					client.DefaultRequestHeaders.Add("Accept", "application/json");
-					client.DefaultRequestHeaders.Add("User-Agent", $"Aprimo.Akeneo.Connector/{Environment.MachineName}");
 					client.Timeout = TimeSpan.FromMinutes(1);
 				})
 				.AddPolicyHandler(unauthorizedPolicy)

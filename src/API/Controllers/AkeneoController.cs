@@ -1,6 +1,5 @@
 ﻿using API.Akeneo;
 using API.Multitenancy;
-using API.Tokens;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
@@ -16,17 +15,15 @@ namespace API.Controllers
 	{
 		private readonly ILogger _logger;
 		private readonly IDataProtector _dataProtector;
-		private readonly IAkeneoService _akeneoService;
-		private readonly ITokenStorage _tokenStorage;
+		private readonly IAkeneoTokenService _akeneoTokenService;
 		private readonly IHostEnvironment _env;
 		private readonly AkeneoTenant _tenant;
 
-		public AkeneoController(ILogger<AkeneoController> logger, IDataProtectionProvider dataProtectionProvider, IAkeneoService akeneoService, ITokenStorage tokenStorage, IWebHostEnvironment env, AkeneoTenant tenant)
+		public AkeneoController(ILogger<AkeneoController> logger, IDataProtectionProvider dataProtectionProvider, IAkeneoTokenService akeneoTokenService, IWebHostEnvironment env, AkeneoTenant tenant)
 		{
 			_logger = logger;
 			_dataProtector = dataProtectionProvider.CreateProtector("AkeneoSettings");
-			_akeneoService = akeneoService;
-			_tokenStorage = tokenStorage;
+			_akeneoTokenService = akeneoTokenService;
 			_env = env;
 			_tenant = tenant;
 		}
@@ -89,14 +86,14 @@ namespace API.Controllers
 				return new ObjectResult($"The host '{pimUrl.Host}' is not allowed for this tenant.") { StatusCode = StatusCodes.Status403Forbidden };
 			}
 
-			var (success, tokenResponse) = await _akeneoService.CompleteOAuthFlow(code);
+			var (success, _) = await _akeneoTokenService.CompleteOAuthFlow(code);
 			if (!success)
 			{
 				return Problem();
 			}
 
 			Response.Cookies.Delete(AkeneoConstants.AkeneoTenantCookieName);
-			return Ok(tokenResponse);
+			return Ok($"Successfully connected to {pimUrl}!");
 		}
 
 		[HttpGet("token")]
@@ -108,7 +105,7 @@ namespace API.Controllers
 				return NotFound();
 			}
 
-			var token = await _tokenStorage.GetTokenAsync(pim_url.Host);
+			var token = await _akeneoTokenService.GetTokenAsync();
 			if (string.IsNullOrEmpty(token))
 			{
 				return NotFound();

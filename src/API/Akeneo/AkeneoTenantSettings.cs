@@ -7,7 +7,8 @@ namespace API.Akeneo
 	{
 		public string? ClientId { get; set; }
 		public string? ClientSecret { get; set; }
-		public string Scopes { get; set; } = "read_channel_localization read_channel_settings openid email profile";
+		public string Scopes { get; set; } = "write_products write_assets read_asset_families";
+		public Dictionary<string, Dictionary<string, string>> FieldMappings { get; set; } = new Dictionary<string, Dictionary<string, string>>();
 
 		public IEnumerable<ValidationException> Validate()
 		{
@@ -24,6 +25,10 @@ namespace API.Akeneo
 			if (string.IsNullOrEmpty(Scopes))
 			{
 				errors.Add(new ValidationException($"Missing required configuration value: {nameof(AkeneoTenantSettings)}:{nameof(Scopes)}"));
+			}
+			if (FieldMappings == null || FieldMappings.Count <= 0)
+			{
+				errors.Add(new ValidationException($"Missing required configuration value: {nameof(AkeneoTenantSettings)}:{nameof(FieldMappings)}"));
 			}
 
 			return errors;
