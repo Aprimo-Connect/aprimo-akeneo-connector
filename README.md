@@ -126,7 +126,7 @@ In addition, the following values are available:
 
 - `record.id`: The ID of the record in Aprimo.
 - `record.publicUri`: A public URL to the asset in Aprimo.
-- `syncDate`: The current date time in UTC format of when the sync ran.
+- `record.syncDate`: The current date time in UTC format of when the sync ran.
 
 Example mappings (using JSON format):
 
@@ -181,7 +181,7 @@ All text attributes on the Product will be available in this format `product.val
 The followingn fields are also available:
 
 - `product.identifier`: The identifier of the Product in Akeneo.
-- `syncDate`: The current date time in UTC format of when the sync ran.
+- `product.syncDate`: The current date time in UTC format of when the sync ran.
 
 ### Full Configuration Example:
 
