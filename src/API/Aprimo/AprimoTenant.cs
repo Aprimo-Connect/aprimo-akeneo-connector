@@ -8,8 +8,10 @@ namespace API.Aprimo
 		{
 		}
 
-		public Uri OAuthBaseUri => new Uri($"https://{Id}.aprimo.com");
+		public Uri DAMAPIBaseUri => new Uri($"https://{Id}.dam.aprimo.com");
 
-		public Uri DAMBaseUri => new Uri($"https://{Id}.dam.aprimo.com");
+		public Uri APIBaseUri => new Uri($"https://{Id}.aprimo.com");
+
+		public Uri OAuthBaseUri => APIBaseUri;
 	}
 }

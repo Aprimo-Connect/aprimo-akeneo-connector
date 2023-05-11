@@ -20,63 +20,27 @@ namespace API.Aprimo
 			_tenant = tenant;
 		}
 
-		public async Task<(bool Success, AprimoDAMPublicCDNOrder? PublicCDNOrder)> GetPublicCDNOrder(string recordId)
+		public async Task<(bool Success, AprimoUser? User)> GetCurrentUser()
 		{
-			var orderUriBuilder = new UriBuilder(_tenant.DAMBaseUri);
-			orderUriBuilder.Path = $"/api/core/orders";
+			var currentUserUriBuilder = new UriBuilder(_tenant.APIBaseUri);
+			currentUserUriBuilder.Path = $"/api/users/me";
 
-			var createOrderRequest = new HttpRequestMessage(HttpMethod.Post, orderUriBuilder.Uri);
-			var publicCDNOrderRequest = new AprimoDAMPublicCDNOrderRequest
+			var getRequest = new HttpRequestMessage(HttpMethod.Get, currentUserUriBuilder.Uri);
+			var (success, result) = await _httpClient.SendRequestAsyncWithResult<AprimoUser>(getRequest);
+			if (!success || result == null)
 			{
-				Targets = new List<AprimoDAMPublicCDNOrderTargetRequest>
-				{
-					new AprimoDAMPublicCDNOrderTargetRequest
-					{
-						RecordId = recordId,
-						AssetTypes = new List<string> { "LatestVersionOfMasterFile" }
-					}
-				}
-			};
-			createOrderRequest.Content = JsonContent.Create<AprimoDAMPublicCDNOrderRequest>(publicCDNOrderRequest, options: _jsonSerializerOptions);
-			var (success, result) = await _httpClient.SendRequestAsyncWithResult<AprimoDAMPublicCDNOrder>(createOrderRequest);
-			if (!success || result == null || result.Data == null)
-			{
-				_logger.LogError("Failed to get order from {url}", orderUriBuilder.Uri);
+				_logger.LogError("Failed to get user from {url}", currentUserUriBuilder.Uri);
 				return (false, null);
 			}
 
-			var order = result.Data;
-			if (order == null || string.IsNullOrEmpty(order.Id))
+			var user = result.Data;
+			if (string.IsNullOrEmpty(user.AdamUserId))
 			{
-				_logger.LogError("Failed to deserialize response from {url}", orderUriBuilder.Uri);
+				_logger.LogError("Failed to deserialize response from {url}", currentUserUriBuilder.Uri);
 				return (false, null);
 			}
 
-			return (true, order);
-		}
-
-		public async Task<(bool Success, AprimoDAMRecord? record)> GetRecord(string recordId)
-		{
-			var recordUriBuilder = new UriBuilder(_tenant.DAMBaseUri);
-			recordUriBuilder.Path = $"/api/core/record/{recordId}";
-
-			var getRecordRequest = new HttpRequestMessage(HttpMethod.Get, recordUriBuilder.Uri);
-			getRecordRequest.Headers.Add("select-record", "fields");
-			var (success, result) = await _httpClient.SendRequestAsyncWithResult<AprimoDAMRecord>(getRecordRequest);
-			if (!success || result == null || result.Data == null)
-			{
-				_logger.LogError("Failed to get record from {url}", recordUriBuilder.Uri);
-				return (false, null);
-			}
-
-			var record = result.Data;
-			if (record == null || string.IsNullOrEmpty(record.Id))
-			{
-				_logger.LogError("Failed to deserialize response from {url}", recordUriBuilder.Uri);
-				return (false, null);
-			}
-
-			return (true, record);
+			return (true, user);
 		}
 	}
 }

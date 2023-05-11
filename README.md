@@ -12,7 +12,7 @@ In order to use this integration, you need to perform some required configuratio
 
 ### Asset Family
 
-In Akeneo you need to set up your [Asset Families](https://api.akeneo.com/concepts/asset-manager.html#asset-family). Decide the asset families you want to sync assets from Aprimo and set up their attributes.
+In Akeneo you need to set up your [Asset Families](https://api.akeneo.com/concepts/asset-manager.html#asset-family). Decide the asset families to which you want to sync assets from Aprimo and set up their attributes.
 
 ### Application Registration
 
@@ -20,7 +20,7 @@ Register the integration as an application in Akeneo:
 
 https://api.akeneo.com/apps/create-custom-app.html
 
-It is recommended to use a dedicated user for the integration to use that has permissions to create and update assets and products.
+It is recommended to use a dedicated user for the integration that has permissions to create and update assets and products.
 
 ## Aprimo Setup
 
@@ -46,6 +46,7 @@ You can also add additional conditions to execution of this rule based on your u
       <Body>
 {
 "recordId":<ref:text out="@adamRecord" encode="json" />,
+"userId":<ref:user out="id" encode="json" />
 "assetFamily":"[ASSET FAMILY]"
 }
       </Body>
@@ -61,6 +62,8 @@ Replace items in brackets (`[]`) with:
 - [ASSET FAMILY]: This is the asset family in Akeneo that you want to sync assets to for this rule. You can either hard-code this value or use a dynamic field lookup so this value is determined based on a field on the record. See [Dynamic Field Lookup in Aprimo Rule](#dynamic-field-lookup-in-aprimo-rule) for more information.
 
 You can also add a `productId` field to the request body in the Aprimo rule. If this value is set, the asset will be associated to the product in Akeneo with the given ID. This value can also be a dynamic field lookup so the product ID is determined based on a field on the record. See [Dynamic Field Lookup in Aprimo Rule](#dynamic-field-lookup-in-aprimo-rule) for more information.
+
+The `userId` field is needed to avoid an infinite loop since the integration may update the Aprimo record which could trigger the rule again.
 
 #### Dynamic Field Lookup in Aprimo Rule
 
@@ -123,23 +126,62 @@ In addition, the following values are available:
 
 - `record.id`: The ID of the record in Aprimo.
 - `record.publicUri`: A public URL to the asset in Aprimo.
+- `syncDate`: The current date time in UTC format of when the sync ran.
 
 Example mappings (using JSON format):
 
 ```json
 {
   "packshots": {
-    "record.publicUri": "media_url",
-    "record.fields.Record Description": "description",
-    "record.fields.Record Name": "label"
+    "record.publicUri": "asset.media_url",
+    "record.fields.Record Description": "asset.description",
+    "record.fields.Record Name": "asset.label"
   },
   "userguides": {
-    "record.publicUri": "media_url",
-    "record.fields.Record Description": "description",
-    "record.fields.Record Name": "label"
+    "record.publicUri": "asset.media_url",
+    "record.fields.Record Description": "asset.description",
+    "record.fields.Record Name": "asset.label"
   }
 }
 ```
+
+### Updating Products
+
+If you want the integration to associate the Akeneo Asset to an Akeneo Product after creation, the body of the rule request must include a `productId` field that is non-empty which matches the ID of a Product in Akeneo.
+
+Additionally, the configuration for the Asset Family mapping must include a key called `AssetAttributeName` which is the code of the attribute on the Product that will store the Assets. For example:
+
+```json
+{
+  "packshots": {
+    "record.publicUri": "asset.media_url",
+    "record.fields.Record Description": "asset.description",
+    "record.fields.Record Name": "asset.label",
+    "AssetAttributeName": "packshots"
+  }
+}
+```
+
+You can also sync Product attributes to the Aprimo Asset fields by including Product field mappings in the configuration of the mapping for the Asset Family. For example:
+
+```json
+{
+  "packshots": {
+    "record.publicUri": "asset.media_url",
+    "record.fields.Record Description": "asset.description",
+    "record.fields.Record Name": "asset.label",
+    "AssetAttributeName": "packshots",
+    "product.values.text": "record.description"
+  }
+}
+```
+
+All text attributes on the Product will be available in this format `product.values.[ATTRIBUTE CODE]` where `[ATTRIBUTE CODE]` is the code of the attribute on the Product.
+
+The followingn fields are also available:
+
+- `product.identifier`: The identifier of the Product in Akeneo.
+- `syncDate`: The current date time in UTC format of when the sync ran.
 
 ### Full Configuration Example:
 
@@ -151,14 +193,17 @@ Example mappings (using JSON format):
       "ClientSecret": "my_secret",
       "FieldMappings": {
         "packshots": {
-          "record.publicUri": "media_url",
-          "record.fields.Record Description": "description",
-          "record.fields.Record Name": "label"
+          "AssetAttributeName": "packshots",
+          "record.publicUri": "asset.media_url",
+          "record.fields.Record Description": "asset.description",
+          "record.fields.Record Name": "asset.label"
         },
         "userguides": {
-          "record.publicUri": "media_url",
-          "record.fields.Record Description": "description",
-          "record.fields.Record Name": "label"
+          "AssetAttributeName": "user_guides",
+          "record.publicUri": "asset.media_url",
+          "record.fields.Record Description": "asset.description",
+          "record.fields.Record Name": "asset.label",
+          "product.values.sku": "record.fields.Product SKU"
         }
       }
     }
@@ -192,8 +237,6 @@ If configured, the HMAC signature of the request can also be verified. To enable
 More information on HMAC signature support is available in Aprimo documentation:
 
 https://training3.dam.aprimo.com/assets/webhelp/adamhelp.htm#Admin%20Guide/References/httpRequest%20references.htm
-
-# Development
 
 # Future Enhancement Opportunities
 

@@ -9,12 +9,18 @@ namespace API.Aprimo
 	{
 		public static IServiceCollection AddAprimo(this IServiceCollection services, IConfiguration configuration, IHostEnvironment env)
 		{
-			services.AddDefaultHttpClient<IAprimoTokenService, AprimoTokenService>(env);
-
 			var unauthorizedPolicy = Policy.HandleResult<HttpResponseMessage>(message => message.StatusCode == System.Net.HttpStatusCode.Unauthorized).RetryAsync(1);
+
+			services.AddDefaultHttpClient<IAprimoTokenService, AprimoTokenService>(env);
 			services
 				.AddScoped<AprimoTokenAuthHeaderHandler>()
 				.AddDefaultHttpClient<IAprimoService, AprimoService>(env)
+				.AddPolicyHandler(unauthorizedPolicy)
+				.AddHttpMessageHandler<AprimoTokenAuthHeaderHandler>();
+
+			services
+				.AddScoped<AprimoTokenAuthHeaderHandler>()
+				.AddDefaultHttpClient<IAprimoDAMService, AprimoDAMService>(env)
 				.ConfigureHttpClient((client) =>
 				{
 					client.DefaultRequestHeaders.Add("API-VERSION", "1");

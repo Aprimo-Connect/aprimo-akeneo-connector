@@ -5,6 +5,8 @@ namespace API.Akeneo
 {
 	public class AkeneoTenantSettings : ScopedSetting, IValidatable
 	{
+		public static readonly string ProductAssetAttributeConfigurationKey = "AssetAttributeName";
+
 		public string? ClientId { get; set; }
 		public string? ClientSecret { get; set; }
 		public string Scopes { get; set; } = "write_products write_assets read_asset_families";
@@ -29,6 +31,23 @@ namespace API.Akeneo
 			if (FieldMappings == null || FieldMappings.Count <= 0)
 			{
 				errors.Add(new ValidationException($"Missing required configuration value: {nameof(AkeneoTenantSettings)}:{nameof(FieldMappings)}"));
+			}
+			else
+			{
+				foreach (var fieldMapping in FieldMappings)
+				{
+					if (fieldMapping.Value == null || fieldMapping.Value.Count <= 0)
+					{
+						errors.Add(new ValidationException($"Missing required configuration value: {nameof(AkeneoTenantSettings)}:{nameof(FieldMappings)}:{fieldMapping.Key}"));
+					}
+					else
+					{
+						if (!fieldMapping.Value.Keys.Contains(ProductAssetAttributeConfigurationKey))
+						{
+							errors.Add(new ValidationException($"Missing required configuration value: {nameof(AkeneoTenantSettings)}:{nameof(FieldMappings)}:{fieldMapping.Key}:{ProductAssetAttributeConfigurationKey}"));
+						}
+					}
+				}
 			}
 
 			return errors;

@@ -19,22 +19,4 @@
 			return Value;
 		}
 	}
-
-	public class LocalizedTextValue : IMappableValue
-	{
-		public string LocaleId { get; set; }
-
-		public string LocalizedValue { get; set; }
-
-		public LocalizedTextValue(string localeId, string localizedValue)
-		{
-			LocaleId = localeId;
-			LocalizedValue = localizedValue;
-		}
-
-		public string GetValue()
-		{
-			return LocalizedValue;
-		}
-	}
 }
