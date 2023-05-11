@@ -38,7 +38,7 @@ namespace API.Aprimo
 
 		public bool TryGetFromHeader(out string tenantId)
 		{
-			tenantId = _httpContextAccessor.HttpContext?.Request.Headers["x-aprimo-tenant"] ?? "";
+			tenantId = _httpContextAccessor.HttpContext?.Request.Headers["x-aprimo-tenant"].ToString() ?? "";
 			if (string.IsNullOrEmpty(tenantId))
 			{
 				return false;

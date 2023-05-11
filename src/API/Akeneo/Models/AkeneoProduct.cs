@@ -1,6 +1,6 @@
 ﻿namespace API.Akeneo.Models
 {
-	public class AkeneoProductPatchRequest
+	public class AkeneoProduct
 	{
 		public string? Identifier { get; set; }
 

@@ -43,7 +43,7 @@ namespace API.Akeneo
 
 		public bool TryGetFromHeader(out string tenantId)
 		{
-			tenantId = _httpContextAccessor.HttpContext?.Request.Headers[AkeneoConstants.AkeneoTenantHostHeader] ?? "";
+			tenantId = _httpContextAccessor.HttpContext?.Request.Headers[AkeneoConstants.AkeneoTenantHostHeader].ToString() ?? "";
 			if (string.IsNullOrEmpty(tenantId))
 			{
 				return false;
@@ -54,7 +54,7 @@ namespace API.Akeneo
 
 		public bool TryGetFromQueryString(out string tenantId)
 		{
-			var pimUrl = _httpContextAccessor.HttpContext?.Request.Query["pim_url"] ?? "";
+			var pimUrl = _httpContextAccessor.HttpContext?.Request.Query["pim_url"].ToString() ?? "";
 			if (string.IsNullOrEmpty(pimUrl))
 			{
 				tenantId = "";
