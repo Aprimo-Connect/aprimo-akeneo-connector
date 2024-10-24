@@ -242,3 +242,8 @@ https://training3.dam.aprimo.com/assets/webhelp/adamhelp.htm#Admin%20Guide/Refer
 
 - Supporting other field types, especially localized fields
 - A scheduled sync to sync data from Akeneo to Aprimo
+
+# Open Source Policy
+
+For more information about Aprimo's Open Source Policies, please refer to
+https://community.aprimo.com/knowledgecenter/aprimo-connect/aprimo-connect-open-source
